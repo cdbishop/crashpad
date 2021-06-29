@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  workflow_dispatch:
+
+jobs:
+  linux-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build
+        run: |
+          sudo apt-get install libcurl4-gnutls-dev
+          wget -O depot_tools.tar.gz https://chromium.googlesource.com/chromium/tools/depot_tools.git/+archive/e5d455cca7848b948865330188cf7a4720cdfc51.tar.gz
+          mkdir /tmp/depot_tools
+          tar -xvf depot_tools.tar.gz -C /tmp/depot_tools
+          export PATH=$PATH:/tmp/depot_tools
+          gclient config --spec="solutions=[{\"url\": \"https://github.com/chromium/crashpad@c4081b8e6ddf08b94dd61d8f1a5df421ab42a1cf\", \"managed\": False, \"name\": \"crashpad\"}]"
+          gclient sync -v --no-history
+          cd ./crashpad
+          gn gen out/ci --args="is_debug=true target_cpu=\"x64\"" 
+          ninja -C out/ci all
+
+  window-build:
+    runs-on: windows-latest
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - name: Build
+        run: |
+          choco install wget
+          wget -O depot_tools.tar.gz https://chromium.googlesource.com/chromium/tools/depot_tools.git/+archive/e5d455cca7848b948865330188cf7a4720cdfc51.tar.gz
+          mkdir $env:TEMP/depot_tools
+          echo "Extracting depot tools to $env:TEMP/depot_tools"
+          tar -xf depot_tools.tar.gz -C $env:TEMP\depot_tools
+          echo "done extract"
+          $env:PATH +=  $env:PATH += ";$env:TEMP\depot_tools"
+          $env:DEPOT_TOOLS_UPDATE = "0"
+          gclient config --spec="solutions=[{\"url\": \"https://github.com/chromium/crashpad@c4081b8e6ddf08b94dd61d8f1a5df421ab42a1cf\", \"managed\": False, \"name\": \"crashpad\"}]"
+          gclient sync -v --no-history
+          cd ./crashpad
+          gn gen out/ci --args="is_debug=true target_cpu=\"x64\"" 
+          ninja -C out/ci all
