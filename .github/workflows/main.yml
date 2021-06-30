@@ -45,6 +45,8 @@ jobs:
           echo "done extract"
           $env:PATH +=  $env:PATH += ";$env:TEMP\depot_tools"
           $env:DEPOT_TOOLS_UPDATE = "0"
+          echo "boostrap depo tools"
+          $env:TEMP/depot_tools/bin/boostrap/win_tools.bat                    
           echo "testing gclient"
           gclient --help
           gclient config --spec="solutions=[{\"url\": \"https://github.com/chromium/crashpad@c4081b8e6ddf08b94dd61d8f1a5df421ab42a1cf\", \"managed\": False, \"name\": \"crashpad\"}]"
